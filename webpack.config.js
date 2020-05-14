@@ -19,6 +19,7 @@ const commonResolve = dir => ({
     ['@components']: resolve("src/ui/popup/components"),
     ['@styles']: resolve("src/ui/popup/styles"),
     ['@utils']: resolve("src/ui/popup/utils"),
+    ['@redux']: resolve("src/ui/popup/redux"),
     ['@hooks']: resolve("src/ui/hooks"),
   }
 });
