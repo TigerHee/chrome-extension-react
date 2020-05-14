@@ -8,20 +8,20 @@ const WriteFilePlugin = require("write-file-webpack-plugin");
 
 const isEnvDevelopment = process.env.NODE_ENV !== "production";
 
-const resolve = dir => path.resolve(__dirname, dir);
+const resolve = (dir) => path.resolve(__dirname, dir);
 
-const commonResolve = dir => ({
+const commonResolve = (dir) => ({
   extensions: [".js", ".jsx", ".css", ".less"],
   alias: {
     assets: resolve(dir),
-    ['@src']: resolve("src"),
-    ['@pages']: resolve("src/ui/popup/pages"),
-    ['@components']: resolve("src/ui/popup/components"),
-    ['@styles']: resolve("src/ui/popup/styles"),
-    ['@utils']: resolve("src/ui/popup/utils"),
-    ['@redux']: resolve("src/ui/popup/redux"),
-    ['@hooks']: resolve("src/ui/hooks"),
-  }
+    ["@src"]: resolve("src"),
+    ["@pages"]: resolve("src/ui/popup/pages"),
+    ["@components"]: resolve("src/ui/popup/components"),
+    ["@styles"]: resolve("src/ui/popup/styles"),
+    ["@utils"]: resolve("src/ui/popup/utils"),
+    ["@redux"]: resolve("src/ui/popup/redux"),
+    ["@hooks"]: resolve("src/ui/hooks"),
+  },
 });
 const lessRule = {
   test: /(\.s?css)|(\.less)$/,
@@ -35,22 +35,18 @@ const lessRule = {
           loader: "css-loader",
           options: {
             modules: {
-              localIdentName: "[local]-[hash:base64]"
+              localIdentName: "[local]-[hash:base64]",
             },
-            localsConvention: "camelCase"
-          }
+            localsConvention: "camelCase",
+          },
         },
-        "less-loader"
-      ]
+        "less-loader",
+      ],
     },
     {
-      use: [
-        "style-loader",
-        { loader: "css-loader", options: { modules: false } },
-        "less-loader"
-      ]
-    }
-  ]
+      use: ["style-loader", { loader: "css-loader", options: { modules: false } }, "less-loader"],
+    },
+  ],
 };
 const fileRule = {
   test: /\.(svg|png|jpe?g|gif|woff|woff2|eot|ttf)$/i,
@@ -60,29 +56,37 @@ const fileRule = {
       options: {
         name: "[name].[ext]",
         publicPath: "assets",
-        outputPath: "assets"
-      }
-    }
-  ]
+        outputPath: "assets",
+      },
+    },
+  ],
 };
 const reactRule = {
   test: /\.(js|jsx)$/,
   use: {
-    loader: 'babel-loader',
+    loader: "babel-loader",
     options: {
-      presets: [
-        '@babel/preset-env',
-        '@babel/preset-react'
-      ],
+      presets: ["@babel/preset-env", "@babel/preset-react"],
       plugins: [
         "@babel/plugin-transform-runtime",
-        ["@babel/plugin-proposal-decorators", { "legacy": true }],
-        ["@babel/plugin-proposal-class-properties", { "loose": true }]
-      ]
-    }
+        ["@babel/plugin-proposal-decorators", { legacy: true }],
+        ["@babel/plugin-proposal-class-properties", { loose: true }],
+      ],
+    },
   },
-  exclude: /node_modules/
-}
+  exclude: /node_modules/,
+};
+
+const eslintRule = {
+  test: /\.(js|jsx)$/,
+  use: {
+    loader: "eslint-loader",
+    options: {
+      enforce: "pre",
+    },
+  },
+  exclude: /node_modules/,
+};
 
 const extensionConfig = (env, args) => {
   return {
@@ -96,15 +100,15 @@ const extensionConfig = (env, args) => {
       popup: ["./src/ui/popup/popup.js"],
       background: ["./src/background/background.js"],
       contentScripts: ["./src/content-scripts/content-scripts.js"],
-      injectedScript: ["./src/content-scripts/injected-script.js"]
+      injectedScript: ["./src/content-scripts/injected-script.js"],
     },
     output: {
       path: path.resolve(__dirname, isEnvDevelopment ? "dist" : "prod"),
-      filename: "[name].bundle.js"
+      filename: "[name].bundle.js",
     },
     resolve: commonResolve("src/ui/popup/public/assets"),
     module: {
-      rules: [lessRule, reactRule, fileRule]
+      rules: [lessRule, eslintRule, reactRule, fileRule],
     },
     plugins: [
       // Remove all and write anyway
@@ -114,22 +118,22 @@ const extensionConfig = (env, args) => {
         [
           {
             from: "./src/manifest.json",
-            to: "./"
+            to: "./",
           },
           {
-            from: "node_modules/webextension-polyfill/dist/browser-polyfill.js"
-          }
+            from: "node_modules/webextension-polyfill/dist/browser-polyfill.js",
+          },
         ],
-        { copyUnmodified: true }
+        { copyUnmodified: true },
       ),
       new HtmlWebpackPlugin({
         template: "./src/popup.html",
         filename: "popup.html",
-        chunks: ["popup"]
+        chunks: ["popup"],
       }),
       new WriteFilePlugin(),
-      new webpack.EnvironmentPlugin(["NODE_ENV"])
-    ]
+      new webpack.EnvironmentPlugin(["NODE_ENV"]),
+    ],
   };
 };
 
