@@ -1,20 +1,24 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const webpack = require("webpack");
 const path = require("path");
+const TerserPlugin = require("terser-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const WriteFilePlugin = require("write-file-webpack-plugin");
 
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+
 const isEnvDevelopment = process.env.NODE_ENV !== "production";
 
 const resolve = (dir) => path.resolve(__dirname, dir);
 
-const commonResolve = (dir) => ({
+const commonResolve = () => ({
   extensions: [".js", ".jsx", ".css", ".less"],
   alias: {
-    assets: resolve(dir),
     ["@src"]: resolve("src"),
+    ["@assets"]: resolve("src/ui/popup/public/assets"),
     ["@pages"]: resolve("src/ui/popup/pages"),
     ["@components"]: resolve("src/ui/popup/components"),
     ["@styles"]: resolve("src/ui/popup/styles"),
@@ -24,27 +28,45 @@ const commonResolve = (dir) => ({
   },
 });
 const lessRule = {
-  test: /(\.s?css)|(\.less)$/,
+  test: /(\.css)|(\.less)$/,
   oneOf: [
     // if ext includes module as prefix, it perform by css loader.
     {
-      test: /.module(\.s?css)|(\.less)$/,
+      test: /style(\.less)$/,
       use: [
-        "style-loader",
+        MiniCssExtractPlugin.loader,
         {
           loader: "css-loader",
           options: {
             modules: {
-              localIdentName: "[local]-[hash:base64]",
+              localIdentName: "[local]_[hash:base64:8]",
             },
             localsConvention: "camelCase",
           },
         },
-        "less-loader",
+        {
+          loader: "less-loader",
+          options: {
+            javascriptEnabled: true,
+          },
+        },
       ],
     },
     {
-      use: ["style-loader", { loader: "css-loader", options: { modules: false } }, "less-loader"],
+      use: [
+        MiniCssExtractPlugin.loader,
+        { loader: "css-loader", options: { modules: false } },
+        {
+          loader: "less-loader",
+          options: {
+            modifyVars: {
+              "@primary-color": "#0FCD8C",
+              "@btn-primary-color": "#FFF",
+            },
+            javascriptEnabled: true,
+          },
+        },
+      ],
     },
   ],
 };
@@ -71,6 +93,14 @@ const reactRule = {
         "@babel/plugin-transform-runtime",
         ["@babel/plugin-proposal-decorators", { legacy: true }],
         ["@babel/plugin-proposal-class-properties", { loose: true }],
+        [
+          "import",
+          {
+            libraryName: "antd",
+            libraryDirectory: "es",
+            style: true,
+          },
+        ],
       ],
     },
   },
@@ -106,8 +136,18 @@ const extensionConfig = (env, args) => {
       path: path.resolve(__dirname, isEnvDevelopment ? "dist" : "prod"),
       filename: "[name].bundle.js",
     },
-    resolve: commonResolve("src/ui/popup/public/assets"),
+    resolve: commonResolve(),
+    optimization: {
+      minimizer: [
+        new TerserPlugin({
+          test: /\.(js|jsx)$/,
+          exclude: /node_modules/,
+        }),
+        new OptimizeCSSAssetsPlugin({}),
+      ],
+    },
     module: {
+      strictExportPresence: true,
       rules: [lessRule, eslintRule, reactRule, fileRule],
     },
     plugins: [
@@ -133,6 +173,10 @@ const extensionConfig = (env, args) => {
       }),
       new WriteFilePlugin(),
       new webpack.EnvironmentPlugin(["NODE_ENV"]),
+      new MiniCssExtractPlugin({
+        filename: "css/[name]_[hash:8].css",
+      }),
+      new webpack.IgnorePlugin(/\.\/locale/, /moment/)
     ],
   };
 };
